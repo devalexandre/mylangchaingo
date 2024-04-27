@@ -3,10 +3,10 @@ package openai
 import (
 	"context"
 	"fmt"
+	"github.com/devalexandre/mylangchaingo/llms/openai/internal/openaiclient"
 
 	"github.com/tmc/langchaingo/callbacks"
 	"github.com/tmc/langchaingo/llms"
-	"github.com/tmc/langchaingo/llms/openai/internal/openaiclient"
 )
 
 type ChatMessage = openaiclient.ChatMessage
@@ -110,7 +110,7 @@ func (o *LLM) GenerateContent(ctx context.Context, messages []llms.MessageConten
 		Seed:                 opts.Seed,
 	}
 	if opts.JSONMode {
-		req.ResponseFormat = ResponseFormatJSON
+		req.ResponseFormat = (*openaiclient.ResponseFormat)(ResponseFormatJSON)
 	}
 
 	// since req.Functions is deprecated, we need to use the new Tools API.

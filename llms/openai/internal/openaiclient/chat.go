@@ -7,8 +7,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/devalexandre/langsmithgo"
+	"github.com/devalexandre/mylangchaingo"
+	"github.com/google/uuid"
 	"log"
 	"net/http"
+	"os"
+	"runtime"
 	"strings"
 
 	"github.com/tmc/langchaingo/llms"
@@ -357,6 +362,34 @@ func (c *Client) createChat(ctx context.Context, payload *ChatRequest) (*ChatCom
 
 	c.setHeaders(req)
 
+	if c.langsmithClient != nil {
+
+		if c.langsmithgoParentId == "" {
+			c.langsmithgoParentId = mylangchaingo.GetParentId()
+		}
+
+		err := c.langsmithClient.Run(&langsmithgo.RunPayload{
+			Name:        "OpenAI - ChatCompletion",
+			SessionName: os.Getenv("LANGCHAIN_PROJECT_NAME"),
+			RunType:     langsmithgo.Embedding,
+			RunID:       mylangchaingo.GetRunId(),
+			ParentID:    c.langsmithgoParentId,
+			Inputs: map[string]interface{}{
+				"payload": payload,
+			},
+			Metadata: map[string]interface{}{
+				"go_version": runtime.Version(),
+				"platform":   runtime.GOOS,
+				"arch":       runtime.GOARCH,
+			},
+		})
+		c.langsmithgoParentId = mylangchaingo.GetRunId()
+
+		if err != nil {
+			return nil, fmt.Errorf("error running langsmith: %w", err)
+
+		}
+	}
 	// Send request
 	r, err := c.httpClient.Do(req)
 	if err != nil {
@@ -381,6 +414,24 @@ func (c *Client) createChat(ctx context.Context, payload *ChatRequest) (*ChatCom
 	}
 	// Parse response
 	var response ChatCompletionResponse
+
+	if c.langsmithClient != nil {
+		err := c.langsmithClient.Run(&langsmithgo.RunPayload{
+			RunID: mylangchaingo.GetRunId(),
+			Outputs: map[string]interface{}{
+				"output": response,
+			},
+		})
+
+		if err != nil {
+			return nil, fmt.Errorf("error running langsmith: %w", err)
+		}
+	}
+
+	//update valies runId and ParentId
+	mylangchaingo.SetParentId(mylangchaingo.GetRunId())
+	mylangchaingo.SetRunId(uuid.New().String())
+
 	return &response, json.NewDecoder(r.Body).Decode(&response)
 }
 

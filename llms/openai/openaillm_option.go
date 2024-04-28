@@ -1,8 +1,9 @@
 package openai
 
 import (
+	"github.com/devalexandre/langsmithgo"
+	"github.com/devalexandre/mylangchaingo/llms/openai/internal/openaiclient"
 	"github.com/tmc/langchaingo/callbacks"
-	"github.com/tmc/langchaingo/llms/openai/internal/openaiclient"
 )
 
 const (
@@ -42,6 +43,11 @@ type options struct {
 	embeddingModel string
 
 	callbackHandler callbacks.Handler
+
+	// langsmith
+	langsmithClient     *langsmithgo.Client
+	langsmithgoRunId    string
+	langsmithgoParentId string
 }
 
 // Option is a functional option for the OpenAI client.
@@ -129,5 +135,19 @@ func WithCallback(callbackHandler callbacks.Handler) Option {
 func WithResponseFormat(responseFormat *ResponseFormat) Option {
 	return func(opts *options) {
 		opts.responseFormat = responseFormat
+	}
+}
+
+// WithLangsmithRunId allows setting a custom Langsmith Run ID.
+func WithLangsmithRunId(runId string) Option {
+	return func(opts *options) {
+		opts.langsmithgoRunId = runId
+	}
+}
+
+// WithLangsmithParentId allows setting a custom Langsmith Parent ID.
+func WithLangsmithParentId(parentId string) Option {
+	return func(opts *options) {
+		opts.langsmithgoParentId = parentId
 	}
 }

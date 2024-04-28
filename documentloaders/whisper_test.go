@@ -9,6 +9,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestMain(m *testing.M) {
+	os.Setenv("LANGCHAIN_TRACING", "false")
+	os.Setenv("LANGSMITH_API_KEY", "")
+	os.Setenv("LANGCHAIN_PROJECT_NAME", "whisper")
+	os.Setenv("OPENAI_API_KEY", "")
+
+	os.Exit(m.Run())
+}
 func TestTranscription(t *testing.T) {
 	t.Parallel()
 	if openaiKey := os.Getenv("OPENAI_API_KEY"); openaiKey == "" {

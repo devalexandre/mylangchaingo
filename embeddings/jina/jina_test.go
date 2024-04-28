@@ -9,17 +9,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setup(t *testing.T) {
-	os.Setenv("JINA_API_KEY", "jina_eda6a00a90ac48daabac72b6d3ba5e3d7Dl_rdQSZwyZ04aRdkcVYIzOjtd7")
+func TestMain(m *testing.M) {
+	os.Setenv("LANGCHAIN_TRACING", "true")
+	os.Setenv("LANGSMITH_API_KEY", "")
+	os.Setenv("LANGCHAIN_PROJECT_NAME", "jina")
+	os.Setenv("OPENAI_API_KEY", "")
+	os.Setenv("JINA_API_KEY", "")
 	if jinakey := os.Getenv("JINA_API_KEY"); jinakey == "" {
-		t.Skip("JINA_API_KEY not set")
+		os.Exit(0)
 
 	}
+	os.Exit(m.Run())
 }
+
 func TestJinaEmbeddings(t *testing.T) {
 	t.Parallel()
-
-	setup(t)
 
 	j, err := NewJina()
 	require.NoError(t, err)
@@ -36,8 +40,6 @@ func TestJinaEmbeddings(t *testing.T) {
 func TestJinaEmbeddingsWithSamllModel(t *testing.T) {
 	t.Parallel()
 
-	setup(t)
-
 	j, err := NewJina(WithModel(SmallModel))
 	_, err = j.EmbedQuery(context.Background(), "Hello world!")
 	require.NoError(t, err)
@@ -50,8 +52,6 @@ func TestJinaEmbeddingsWithSamllModel(t *testing.T) {
 func TestJinaEmbeddingsWithBaseModelModel(t *testing.T) {
 	t.Parallel()
 
-	setup(t)
-
 	j, err := NewJina(WithModel(BaseModel))
 	_, err = j.EmbedQuery(context.Background(), "Hello world!")
 	require.NoError(t, err)
@@ -63,8 +63,6 @@ func TestJinaEmbeddingsWithBaseModelModel(t *testing.T) {
 
 func TestJinaEmbeddingsWithLargeModelModel(t *testing.T) {
 	t.Parallel()
-
-	setup(t)
 
 	j, err := NewJina(WithModel(LargeModel))
 	_, err = j.EmbedQuery(context.Background(), "Hello world!")

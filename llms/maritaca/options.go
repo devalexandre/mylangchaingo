@@ -15,6 +15,8 @@ type options struct {
 	customModelTemplate string
 	system              string
 	format              string
+	langsmithgoRunId    string
+	langsmithgoParentId string
 }
 
 type Option func(*options)
@@ -173,5 +175,19 @@ func WithTokensPerMessage(tokensPerMessage int) Option {
 func WithToken(token string) Option {
 	return func(opts *options) {
 		opts.maritacaOptions.Token = token
+	}
+}
+
+// WithLangsmithgoRunId Set the langsmithgo run id.
+func WithLangsmithgoRunId(runId string) Option {
+	return func(opts *options) {
+		opts.langsmithgoRunId = runId
+	}
+}
+
+// WithLangsmithParentId Set the langsmith parent id.
+func WithLangsmithParentId(parentId string) Option {
+	return func(opts *options) {
+		opts.langsmithgoParentId = parentId
 	}
 }

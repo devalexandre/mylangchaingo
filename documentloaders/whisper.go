@@ -5,12 +5,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/devalexandre/langsmithgo"
+	"github.com/devalexandre/mylangchaingo"
+	"github.com/google/uuid"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -21,11 +25,13 @@ import (
 
 // WhisperOpenAILoader is a struct for loading and transcribing audio files using Whisper OpenAI model.
 type WhisperOpenAILoader struct {
-	model         string  // the model to use for transcription
-	audioFilePath string  // path to the audio file
-	language      string  // language of the audio
-	temperature   float64 // transcription temperature
-	token         string  // authentication token for OpenAI API
+	model               string  // the model to use for transcription
+	audioFilePath       string  // path to the audio file
+	language            string  // language of the audio
+	temperature         float64 // transcription temperature
+	token               string  // authentication token for OpenAI API
+	langsmithClient     *langsmithgo.Client
+	langsmithgoParentId string
 }
 
 // Ensure WhisperOpenAILoader implements the Loader interface.
@@ -41,6 +47,7 @@ type WhisperOpenAIOption func(loader *WhisperOpenAILoader)
 
 // NewWhisperOpenAI creates a new WhisperOpenAILoader with given API key and options.
 func NewWhisperOpenAI(apiKey string, opts ...WhisperOpenAIOption) *WhisperOpenAILoader {
+
 	loader := &WhisperOpenAILoader{
 		model:       "whisper-1",
 		temperature: 0.7,
@@ -50,6 +57,15 @@ func NewWhisperOpenAI(apiKey string, opts ...WhisperOpenAIOption) *WhisperOpenAI
 	// Apply options to configure the loader.
 	for _, opt := range opts {
 		opt(loader)
+	}
+
+	if os.Getenv("LANGCHAIN_TRACING") != "" && os.Getenv("LANGCHAIN_TRACING") != "false" {
+		client := langsmithgo.NewClient(os.Getenv("LANGSMITH_API_KEY"))
+		loader.langsmithClient = client
+
+		if mylangchaingo.GetRunId() == "" {
+			mylangchaingo.SetRunId(uuid.New().String())
+		}
 	}
 
 	return loader
@@ -84,7 +100,15 @@ func WithTemperature(temperature float64) WhisperOpenAIOption {
 	}
 }
 
+// WithLangsmithParentId sets the parent id for langsmith.
+func WithLangsmithParentId(parentId string) WhisperOpenAIOption {
+	return func(w *WhisperOpenAILoader) {
+		w.langsmithgoParentId = parentId
+	}
+}
+
 func (c *WhisperOpenAILoader) Load(ctx context.Context) ([]schema.Document, error) {
+
 	if strings.Contains(c.audioFilePath, "http") {
 		audioFilePath, err := downloadFileFromURL(c.audioFilePath)
 		if err != nil {
@@ -93,11 +117,53 @@ func (c *WhisperOpenAILoader) Load(ctx context.Context) ([]schema.Document, erro
 
 		c.audioFilePath = audioFilePath
 	}
+	if c.langsmithClient != nil {
+		err := c.langsmithClient.Run(&langsmithgo.RunPayload{
+			Name:        "whisper - Load",
+			SessionName: os.Getenv("LANGCHAIN_PROJECT_NAME"),
+			RunType:     langsmithgo.Parser,
+			RunID:       mylangchaingo.GetRunId(),
+			ParentID:    mylangchaingo.GetParentId(),
+			Inputs: map[string]interface{}{
+				"prompt":      c.audioFilePath,
+				"model":       c.model,
+				"temperature": c.temperature,
+				"language":    c.language,
+			},
+			Metadata: map[string]interface{}{
+				"go_version": runtime.Version(),
+				"platform":   runtime.GOOS,
+				"arch":       runtime.GOARCH,
+			},
+		})
+
+		if err != nil {
+			return nil, fmt.Errorf("error running langsmith: %w", err)
+
+		}
+	}
 
 	transcribe, err := c.transcribe(ctx, c.audioFilePath)
 	if err != nil {
 		return nil, err
 	}
+
+	if c.langsmithClient != nil {
+		err := c.langsmithClient.Run(&langsmithgo.RunPayload{
+			RunID: mylangchaingo.GetRunId(),
+			Outputs: map[string]interface{}{
+				"output": string(transcribe),
+			},
+		})
+
+		if err != nil {
+			return nil, fmt.Errorf("error running langsmith: %w", err)
+		}
+	}
+
+	//update valies runId and ParentId
+	mylangchaingo.SetParentId(mylangchaingo.GetRunId())
+	mylangchaingo.SetRunId(uuid.New().String())
 
 	// create a virtual file
 	tmpOutputFile, err := os.CreateTemp("", "*.txt")
@@ -119,7 +185,48 @@ func (c *WhisperOpenAILoader) Load(ctx context.Context) ([]schema.Document, erro
 	}
 	txtLoader := lgdl.NewText(file)
 
-	return txtLoader.Load(ctx)
+	if c.langsmithClient != nil {
+		err := c.langsmithClient.Run(&langsmithgo.RunPayload{
+			Name:        fmt.Sprintf("%s-%s", os.Getenv("LANGCHAIN_PROJECT_NAME"), mylangchaingo.GetRunId()),
+			SessionName: os.Getenv("LANGCHAIN_PROJECT_NAME"),
+			RunType:     langsmithgo.Retriever,
+			RunID:       mylangchaingo.GetRunId(),
+			ParentID:    mylangchaingo.GetParentId(),
+			Inputs: map[string]interface{}{
+				"prompt": file.Name(),
+			},
+			Metadata: map[string]interface{}{
+				"go_version": runtime.Version(),
+				"platform":   runtime.GOOS,
+				"arch":       runtime.GOARCH,
+			},
+		})
+
+		if err != nil {
+			return nil, fmt.Errorf("error running langsmith: %w", err)
+
+		}
+	}
+
+	retriaver, errRetriaver := txtLoader.Load(ctx)
+
+	if c.langsmithClient != nil {
+		err := c.langsmithClient.Run(&langsmithgo.RunPayload{
+			RunID: mylangchaingo.GetRunId(),
+			Outputs: map[string]interface{}{
+				"output": retriaver,
+			},
+		})
+
+		if err != nil {
+			return nil, fmt.Errorf("error running langsmith: %w", err)
+		}
+	}
+
+	//update valies runId and ParentId
+	mylangchaingo.SetParentId(mylangchaingo.GetRunId())
+
+	return retriaver, errRetriaver
 }
 
 func (c *WhisperOpenAILoader) LoadAndSplit(ctx context.Context, splitter textsplitter.TextSplitter) ([]schema.Document, error) {

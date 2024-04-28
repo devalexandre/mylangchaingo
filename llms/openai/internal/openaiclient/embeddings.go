@@ -6,7 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/devalexandre/langsmithgo"
+	"github.com/devalexandre/mylangchaingo"
+	"github.com/google/uuid"
 	"net/http"
+	"os"
+	"runtime"
 )
 
 const (
@@ -36,6 +41,7 @@ type embeddingResponsePayload struct {
 
 // nolint:lll
 func (c *Client) createEmbedding(ctx context.Context, payload *embeddingPayload) (*embeddingResponsePayload, error) {
+
 	if c.baseURL == "" {
 		c.baseURL = defaultBaseURL
 	}
@@ -64,6 +70,34 @@ func (c *Client) createEmbedding(ctx context.Context, payload *embeddingPayload)
 
 	c.setHeaders(req)
 
+	if c.langsmithClient != nil {
+		if c.langsmithgoParentId == "" {
+			c.langsmithgoParentId = mylangchaingo.GetParentId()
+		}
+		err := c.langsmithClient.Run(&langsmithgo.RunPayload{
+			Name:        "OpenAI - Create Embedding",
+			SessionName: os.Getenv("LANGCHAIN_PROJECT_NAME"),
+			RunType:     langsmithgo.Embedding,
+			RunID:       mylangchaingo.GetRunId(),
+			ParentID:    c.langsmithgoParentId,
+			Inputs: map[string]interface{}{
+				"Input":     payload.Input,
+				"Model":     payload.Model,
+				"InputType": payload.InputType,
+			},
+			Metadata: map[string]interface{}{
+				"go_version": runtime.Version(),
+				"platform":   runtime.GOOS,
+				"arch":       runtime.GOARCH,
+			},
+		})
+
+		if err != nil {
+			return nil, fmt.Errorf("error running langsmith: %w", err)
+
+		}
+	}
+
 	r, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("send request: %w", err)
@@ -87,6 +121,25 @@ func (c *Client) createEmbedding(ctx context.Context, payload *embeddingPayload)
 
 	if err := json.NewDecoder(r.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("decode response: %w", err)
+	}
+
+	if c.langsmithClient != nil {
+		err := c.langsmithClient.Run(&langsmithgo.RunPayload{
+			RunID: mylangchaingo.GetRunId(),
+			Outputs: map[string]interface{}{
+				"output": response,
+			},
+		})
+
+		if err != nil {
+			return nil, fmt.Errorf("error running langsmith: %w", err)
+		}
+	}
+
+	if c.langsmithClient != nil {
+		//update valies runId and ParentId
+		mylangchaingo.SetParentId(mylangchaingo.GetRunId())
+		mylangchaingo.SetRunId(uuid.New().String())
 	}
 
 	return &response, nil

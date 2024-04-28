@@ -3,8 +3,14 @@ package maritaca
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/devalexandre/langsmithgo"
+	"github.com/devalexandre/mylangchaingo"
 	"github.com/devalexandre/mylangchaingo/llms/maritaca/internal/maritacaclient"
+	"github.com/google/uuid"
 	"net/http"
+	"os"
+	"runtime"
 
 	"github.com/tmc/langchaingo/callbacks"
 	"github.com/tmc/langchaingo/llms"
@@ -20,6 +26,8 @@ type LLM struct {
 	CallbacksHandler callbacks.Handler
 	client           *maritacaclient.Client
 	options          options
+	langsmithClient  *langsmithgo.Client
+	langsmithRunId   string
 }
 
 var _ llms.Model = (*LLM)(nil)
@@ -39,8 +47,19 @@ func New(opts ...Option) (*LLM, error) {
 	if err != nil {
 		return nil, err
 	}
+	llms := &LLM{client: client, options: o}
+	if os.Getenv("LANGCHAIN_TRACING") != "" && os.Getenv("LANGCHAIN_TRACING") != "false" {
+		client := langsmithgo.NewClient(os.Getenv("LANGSMITH_API_KEY"))
+		llms.langsmithClient = client
+	}
 
-	return &LLM{client: client, options: o}, nil
+	err = llms.setUpLangsmithClient()
+	if err != nil {
+		return nil, err
+
+	}
+
+	return llms, nil
 }
 
 // Call Implement the call interface for LLM.
@@ -136,6 +155,37 @@ func (o *LLM) GenerateContent(ctx context.Context, messages []llms.MessageConten
 		return nil
 	}
 	o.client.Token = o.options.maritacaOptions.Token
+
+	o.options.langsmithgoRunId = mylangchaingo.GetRunId()
+
+	if o.options.langsmithgoParentId == "" {
+		o.options.langsmithgoParentId = o.langsmithRunId
+	}
+
+	if o.langsmithClient != nil {
+
+		err := o.langsmithClient.Run(&langsmithgo.RunPayload{
+			Name:        "MariatacaAI - GenerateContent",
+			SessionName: os.Getenv("LANGCHAIN_PROJECT_NAME"),
+			RunType:     langsmithgo.LLM,
+			RunID:       o.options.langsmithgoRunId,
+			ParentID:    o.options.langsmithgoParentId,
+			Inputs: map[string]interface{}{
+				"payload": req,
+			},
+			Metadata: map[string]interface{}{
+				"go_version": runtime.Version(),
+				"platform":   runtime.GOOS,
+				"arch":       runtime.GOARCH,
+			},
+		})
+		o.options.langsmithgoParentId = o.options.langsmithgoRunId
+
+		if err != nil {
+			return nil, fmt.Errorf("error running langsmith: %w", err)
+
+		}
+	}
 	err := o.client.Generate(ctx, req, fn)
 	if err != nil {
 		if o.CallbacksHandler != nil {
@@ -147,6 +197,25 @@ func (o *LLM) GenerateContent(ctx context.Context, messages []llms.MessageConten
 	choices := createChoice(resp)
 
 	response := &llms.ContentResponse{Choices: choices}
+
+	if o.langsmithClient != nil {
+		err := o.langsmithClient.Run(&langsmithgo.RunPayload{
+			RunID: o.options.langsmithgoRunId,
+			Outputs: map[string]interface{}{
+				"output": response,
+			},
+		})
+
+		if err != nil {
+			return nil, fmt.Errorf("error running langsmith: %w", err)
+		}
+	}
+
+	if o.langsmithClient != nil {
+		//update valies runId and ParentId
+		mylangchaingo.SetParentId(mylangchaingo.GetRunId())
+		mylangchaingo.SetRunId(uuid.New().String())
+	}
 
 	if o.CallbacksHandler != nil {
 		o.CallbacksHandler.HandleLLMGenerateContentEnd(ctx, response)
@@ -196,4 +265,68 @@ func createChoice(resp maritacaclient.ChatResponse) []*llms.ContentChoice {
 			},
 		},
 	}
+}
+
+func (o *LLM) setUpLangsmithClient() error {
+	if o.langsmithClient != nil {
+
+		mylangchaingo.SetRunId(uuid.New().String())
+
+		if o.langsmithRunId == "" {
+			o.langsmithRunId = mylangchaingo.GetRunId()
+		}
+
+		if o.options.langsmithgoParentId == "" {
+			o.options.langsmithgoParentId = mylangchaingo.GetParentId()
+		}
+
+		if o.options.langsmithgoRunId == "" {
+			o.options.langsmithgoRunId = o.langsmithRunId
+		}
+
+		err := o.langsmithClient.Run(&langsmithgo.RunPayload{
+			Name:        "MaritacaAI",
+			SessionName: os.Getenv("LANGCHAIN_PROJECT_NAME"),
+			RunType:     langsmithgo.LLM,
+			RunID:       o.langsmithRunId,
+			ParentID:    o.options.langsmithgoParentId,
+			Inputs: map[string]interface{}{
+				"payload": nil,
+			},
+			Metadata: map[string]interface{}{
+				"go_version": runtime.Version(),
+				"platform":   runtime.GOOS,
+				"arch":       runtime.GOARCH,
+			},
+		})
+		o.options.langsmithgoParentId = o.langsmithRunId
+
+		if err != nil {
+			return fmt.Errorf("error running langsmith: %w", err)
+
+		}
+
+		err = o.langsmithClient.Run(&langsmithgo.RunPayload{
+			RunID: o.options.langsmithgoRunId,
+			Outputs: map[string]interface{}{
+				"output": "",
+			},
+		})
+
+		if err != nil {
+			return fmt.Errorf("error running langsmith: %w", err)
+		}
+
+		//update valies runId and ParentId
+		mylangchaingo.SetParentId(mylangchaingo.GetRunId())
+
+		if o.options.langsmithgoParentId != "" {
+			mylangchaingo.SetParentId(o.options.langsmithgoParentId)
+		}
+
+		mylangchaingo.SetRunId(uuid.New().String()) //every call to LLM will have a new runId
+
+	}
+
+	return nil
 }

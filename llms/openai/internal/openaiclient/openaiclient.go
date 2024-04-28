@@ -4,7 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/devalexandre/langsmithgo"
+	"github.com/devalexandre/mylangchaingo"
+	"github.com/google/uuid"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -37,8 +41,11 @@ type Client struct {
 	httpClient   Doer
 
 	// required when APIType is APITypeAzure or APITypeAzureAD
-	apiVersion      string
-	embeddingsModel string
+	apiVersion          string
+	embeddingsModel     string
+	langsmithClient     *langsmithgo.Client
+	langsmithgoRunId    string
+	langsmithgoParentId string
 }
 
 // Option is an option for the OpenAI client.
@@ -69,6 +76,13 @@ func New(token string, model string, baseURL string, organization string,
 		if err := opt(c); err != nil {
 			return nil, err
 		}
+	}
+
+	if os.Getenv("LANGCHAIN_TRACING") != "" && os.Getenv("LANGSMITH_API_KEY") != "false" {
+		client := langsmithgo.NewClient(os.Getenv("LANGSMITH_API_KEY"))
+		c.langsmithClient = client
+		mylangchaingo.SetRunId(uuid.New().String())
+
 	}
 
 	return c, nil
@@ -134,6 +148,7 @@ func (c *Client) CreateChat(ctx context.Context, r *ChatRequest) (*ChatCompletio
 			r.Model = c.Model
 		}
 	}
+
 	resp, err := c.createChat(ctx, r)
 	if err != nil {
 		return nil, err

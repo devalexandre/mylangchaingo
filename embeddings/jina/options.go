@@ -52,6 +52,13 @@ func WithAPIKey(apiKey string) Option {
 	}
 }
 
+// WithLangsmithParentId sets the parent id for langsmith.
+func WithLangsmithParentId(parentId string) Option {
+	return func(p *Jina) {
+		p.langsmithgoParentId = parentId
+	}
+}
+
 func applyOptions(opts ...Option) *Jina {
 	_models := map[string]int{
 		"jina-embeddings-v2-small-en": 512,

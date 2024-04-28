@@ -19,3 +19,7 @@ go get github.com/devalexandre/mylangchaingo
 
 ![langsmith-maritacaai-jina](https://pbs.twimg.com/media/GMR-W1aXcAAntxI?format=jpg&name=large)
 
+## Support
+### Telegram
+- [Telegram Group](https://t.me/langchaingo)
+

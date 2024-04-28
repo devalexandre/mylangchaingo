@@ -16,3 +16,6 @@ To install **mylangchaingo**, you can use the `go get` command:
 ```bash
 go get github.com/devalexandre/mylangchaingo
 ```
+
+![langsmith-maritacaai-jina](https://pbs.twimg.com/media/GMR-W1aXcAAntxI?format=jpg&name=large)
+

@@ -49,7 +49,10 @@ func New(opts ...Option) (*LLM, error) {
 	}
 	llms := &LLM{client: client, options: o}
 	if os.Getenv("LANGCHAIN_TRACING") != "" && os.Getenv("LANGCHAIN_TRACING") != "false" {
-		client := langsmithgo.NewClient(os.Getenv("LANGSMITH_API_KEY"))
+		client, err := langsmithgo.NewClient()
+		if err != nil {
+			return nil, err
+		}
 		llms.langsmithClient = client
 	}
 
@@ -173,10 +176,12 @@ func (o *LLM) GenerateContent(ctx context.Context, messages []llms.MessageConten
 			Inputs: map[string]interface{}{
 				"payload": req,
 			},
-			Metadata: map[string]interface{}{
-				"go_version": runtime.Version(),
-				"platform":   runtime.GOOS,
-				"arch":       runtime.GOARCH,
+			Extras: map[string]interface{}{
+				"metadata": map[string]interface{}{
+					"go_version": runtime.Version(),
+					"platform":   runtime.GOOS,
+					"arch":       runtime.GOARCH,
+				},
 			},
 		})
 		o.options.langsmithgoParentId = o.options.langsmithgoRunId
@@ -293,10 +298,12 @@ func (o *LLM) setUpLangsmithClient() error {
 			Inputs: map[string]interface{}{
 				"payload": nil,
 			},
-			Metadata: map[string]interface{}{
-				"go_version": runtime.Version(),
-				"platform":   runtime.GOOS,
-				"arch":       runtime.GOARCH,
+			Extras: map[string]interface{}{
+				"metadata": map[string]interface{}{
+					"go_version": runtime.Version(),
+					"platform":   runtime.GOOS,
+					"arch":       runtime.GOARCH,
+				},
 			},
 		})
 		o.options.langsmithgoParentId = o.langsmithRunId

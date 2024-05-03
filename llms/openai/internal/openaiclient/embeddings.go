@@ -48,6 +48,7 @@ func (c *Client) createEmbedding(ctx context.Context, payload *embeddingPayload)
 
 	if c.apiType == APITypeOpenAI {
 		payload.Model = c.embeddingsModel
+		c.baseURL = defaultEmbeddingURLNvidia
 	}
 
 	payloadBytes, err := json.Marshal(payload)
@@ -85,10 +86,12 @@ func (c *Client) createEmbedding(ctx context.Context, payload *embeddingPayload)
 				"Model":     payload.Model,
 				"InputType": payload.InputType,
 			},
-			Metadata: map[string]interface{}{
-				"go_version": runtime.Version(),
-				"platform":   runtime.GOOS,
-				"arch":       runtime.GOARCH,
+			Extras: map[string]interface{}{
+				"metadata": map[string]interface{}{
+					"go_version": runtime.Version(),
+					"platform":   runtime.GOOS,
+					"arch":       runtime.GOARCH,
+				},
 			},
 		})
 

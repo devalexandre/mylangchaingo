@@ -9,8 +9,10 @@ import (
 )
 
 func main() {
+	SetUp()
+
 	opts := []openai.Option{
-		openai.WithModel("meta/llama2-70b"),
+		openai.WithModel("meta/llama3-70b-instruct"),
 		openai.WithAPIType(openai.APITypeNvidia),
 	}
 
@@ -29,5 +31,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(completion)
+	embs, err := llm.CreateEmbedding(ctx, []string{completion})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(embs)
 }

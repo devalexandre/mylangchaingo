@@ -338,17 +338,12 @@ func (c *Client) createChat(ctx context.Context, payload *ChatRequest) (*ChatCom
 	}
 	if c.apiType == APITypeNvidia {
 		c.baseURL = defaultNvidiaURL
-
-		normalisePayloadNvidia(payload)
 	}
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
 	}
-
-	// test := normalisePayloadNvidia(payload)
-	// fmt.Println("test", test)
 
 	// Build request
 	body := bytes.NewReader(payloadBytes)
@@ -377,10 +372,13 @@ func (c *Client) createChat(ctx context.Context, payload *ChatRequest) (*ChatCom
 			Inputs: map[string]interface{}{
 				"payload": payload,
 			},
-			Metadata: map[string]interface{}{
-				"go_version": runtime.Version(),
-				"platform":   runtime.GOOS,
-				"arch":       runtime.GOARCH,
+			Extras: map[string]interface{}{
+				"Metadata": map[string]interface{}{
+					"langsmithgo_version": "v1.0.0",
+					"go_version":          runtime.Version(),
+					"platform":            runtime.GOOS,
+					"arch":                runtime.GOARCH,
+				},
 			},
 		})
 		c.langsmithgoParentId = mylangchaingo.GetRunId()
@@ -521,29 +519,4 @@ func combineStreamingChatResponse(ctx context.Context, payload *ChatRequest, res
 		}
 	}
 	return &response, nil
-}
-
-// Check if message has multi content and normalise it.
-func normalisePayloadNvidia(payload *ChatRequest) ChatRequest {
-	for _, msg := range payload.Messages {
-		if len(msg.MultiContent) > 0 {
-			var messages Messages
-			payloadString, err := json.Marshal(msg)
-			if err != nil {
-				log.Fatal(err)
-			}
-			err = json.Unmarshal(payloadString, &messages)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			msg.Content = ""
-			for _, content := range messages.Content {
-				msg.Content += content.Text + "\n "
-			}
-
-			msg.MultiContent = nil
-		}
-	}
-	return *payload
 }

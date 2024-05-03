@@ -79,9 +79,14 @@ func New(token string, model string, baseURL string, organization string,
 	}
 
 	if os.Getenv("LANGCHAIN_TRACING") != "" && os.Getenv("LANGSMITH_API_KEY") != "false" {
-		client := langsmithgo.NewClient(os.Getenv("LANGSMITH_API_KEY"))
+		client, err := langsmithgo.NewClient()
+		if err != nil {
+			return nil, err
+		}
 		c.langsmithClient = client
-		mylangchaingo.SetRunId(uuid.New().String())
+		root := uuid.New().String()
+		mylangchaingo.SetRunId(root)
+		mylangchaingo.SetRootId(root)
 
 	}
 

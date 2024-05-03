@@ -54,7 +54,10 @@ func NewJina(opts ...Option) (*Jina, error) {
 	v := applyOptions(opts...)
 
 	if os.Getenv("LANGCHAIN_TRACING") != "" && os.Getenv("LANGCHAIN_TRACING") != "false" {
-		client := langsmithgo.NewClient(os.Getenv("LANGSMITH_API_KEY"))
+		client, err := langsmithgo.NewClient()
+		if err != nil {
+			return nil, err
+		}
 		v.langsmithClient = client
 		mylangchaingo.SetRunId(uuid.New().String())
 	}
@@ -121,15 +124,18 @@ func (j *Jina) CreateEmbedding(ctx context.Context, texts []string) ([][]float32
 			SessionName: os.Getenv("LANGCHAIN_PROJECT_NAME"),
 			RunType:     langsmithgo.Embedding,
 			RunID:       mylangchaingo.GetRunId(),
-			ParentID:    mylangchaingo.GetParentId(),
+			ParentID:    mylangchaingo.GetRootId(),
 			Inputs: map[string]interface{}{
 				"Input": texts,
 				"Model": j.Model,
 			},
-			Metadata: map[string]interface{}{
-				"go_version": runtime.Version(),
-				"platform":   runtime.GOOS,
-				"arch":       runtime.GOARCH,
+			Extras: map[string]interface{}{
+				"metadata": map[string]interface{}{
+					"langsmithgo_version": "v1.0.0",
+					"go_version":          runtime.Version(),
+					"platform":            runtime.GOOS,
+					"arch":                runtime.GOARCH,
+				},
 			},
 		})
 

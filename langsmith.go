@@ -1,8 +1,10 @@
 package mylangchaingo
 
-import "sync/atomic"
+import (
+	"sync/atomic"
+)
 
-var runID, parentID atomic.Value
+var runID, parentID, rootID atomic.Value
 
 // SetRunId sets the run id
 func SetRunId(runId string) {
@@ -29,4 +31,17 @@ func GetParentId() string {
 		return ""
 	}
 	return parentID.Load().(string)
+}
+
+// SetRootId sets the root id
+func SetRootId(rootId string) {
+	rootID.Store(rootId)
+}
+
+// GetRootId gets the root id
+func GetRootId() string {
+	if rootID.Load() == nil {
+		return ""
+	}
+	return rootID.Load().(string)
 }

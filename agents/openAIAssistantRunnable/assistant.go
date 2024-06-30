@@ -24,7 +24,37 @@ type Assistant struct {
 	Tools  []tools.Tool
 }
 
-func NewAssistant(name, instructions, model string, tools []tools.Tool) (*Assistant, error) {
+// Option defines the type for functional options to configure the assistant.
+type Option func(*Assistant)
+
+// WithAssistantID configures the assistant with an existing assistant ID.
+func WithAssistantID(id string) Option {
+	return func(a *Assistant) {
+		a.ID = id
+	}
+}
+
+// NewAssistant inicializa um novo assistente, opcionalmente com um ID de assistente existente.
+func NewAssistant(name, instructions, model string, tools []tools.Tool, opts ...Option) (*Assistant, error) {
+	apiKey := os.Getenv("OPENAI_API_KEY")
+
+	assistant := &Assistant{
+		Name:   name,
+		APIKey: apiKey,
+		Model:  model,
+		Tools:  tools,
+	}
+
+	// Aplica quaisquer opções
+	for _, opt := range opts {
+		opt(assistant)
+	}
+
+	// Se um ID de assistente for fornecido, não precisamos criar um novo
+	if assistant.ID != "" {
+		return assistant, nil
+	}
+
 	url := fmt.Sprintf("%s/assistants", baseURL)
 
 	toolsPayload := make([]llms.Tool, len(tools))
@@ -57,7 +87,6 @@ func NewAssistant(name, instructions, model string, tools []tools.Tool) (*Assist
 		return nil, err
 	}
 
-	apiKey := os.Getenv("OPENAI_API_KEY")
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyJSON))
 	if err != nil {
 		return nil, err
@@ -80,13 +109,7 @@ func NewAssistant(name, instructions, model string, tools []tools.Tool) (*Assist
 		return nil, err
 	}
 
-	assistant := &Assistant{
-		ID:     assistantResponse.ID,
-		Name:   assistantResponse.Name,
-		APIKey: apiKey,
-		Model:  assistantResponse.Model,
-		Tools:  tools,
-	}
+	assistant.ID = assistantResponse.ID
 
 	return assistant, nil
 }

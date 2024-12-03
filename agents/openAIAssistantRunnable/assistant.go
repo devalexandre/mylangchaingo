@@ -145,7 +145,7 @@ func (a *Assistant) CreateThread() (string, error) {
 func (a *Assistant) AddMessage(threadID, role, content string) (string, error) {
 	url := fmt.Sprintf("%s/threads/%s/messages", baseURL, threadID)
 
-	requestBody := AddMessageRequest{
+	requestBody := Message{
 		Role:    role,
 		Content: content,
 	}
@@ -241,12 +241,14 @@ func (a *Assistant) CreateRun(threadID, instructions string) (string, error) {
 	return runID, nil
 }
 
-func (a *Assistant) CreateThreadAndRun(instructions string) (string, error) {
+func (a *Assistant) CreateThreadAndRun(messages []Message) (string, error) {
 	url := fmt.Sprintf("%s/threads/runs", baseURL)
 
-	requestBody := CreateRunRequest{
-		AssistantID:  a.ID,
-		Instructions: instructions,
+	requestBody := CreateThreadAndRunRequest{
+		AssistantID: a.ID,
+		Thread: Thread{
+			Messages: messages,
+		},
 	}
 
 	bodyJSON, err := json.Marshal(requestBody)

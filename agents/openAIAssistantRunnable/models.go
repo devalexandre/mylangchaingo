@@ -2,6 +2,14 @@ package openAIAssistantRunnable
 
 import "github.com/tmc/langchaingo/llms"
 
+type Message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+type Thread struct {
+	Messages []Message `json:"messages"`
+}
+
 // ToolConfig is the configuration for a tool that can be used by the assistant.
 type ToolConfig struct {
 	Type     string                   `json:"type"`
@@ -27,11 +35,6 @@ type CreateThreadResponse struct {
 	ID string `json:"id"`
 }
 
-type AddMessageRequest struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
 type AddMessageResponse struct {
 	ID string `json:"id"`
 }
@@ -39,6 +42,11 @@ type AddMessageResponse struct {
 type CreateRunRequest struct {
 	AssistantID  string `json:"assistant_id"`
 	Instructions string `json:"instructions"`
+}
+
+type CreateThreadAndRunRequest struct {
+	AssistantID string `json:"assistant_id"`
+	Thread      Thread `json:"thread"`
 }
 
 type CreateRunResponse struct {

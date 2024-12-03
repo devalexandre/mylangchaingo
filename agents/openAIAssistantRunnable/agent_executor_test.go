@@ -50,7 +50,7 @@ func TestAgentExecutor_Invoke(t *testing.T) {
 	assert.NotNil(t, agentExecutor)
 
 	input := map[string]string{"content": "What is 10 + 20?"}
-	response, err := agentExecutor.Invoke(input)
+	response, err := agentExecutor.Run(input)
 	assert.NoError(t, err)
 	assert.Contains(t, response, "30")
 }

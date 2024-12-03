@@ -198,3 +198,29 @@ func TestAssistant_SubmitToolOutput(t *testing.T) {
 
 	assert.NotEmpty(t, response)
 }
+
+func TestAssistant_CreateThreadAndRun(t *testing.T) {
+
+	assistant, err := NewAssistant(
+		"Burguer Beer",
+		instructions,
+		"gpt-3.5-turbo-0125",
+		nil,
+		WithAssistantID("asst_qSusDWoOKM3lJFEabFqO7j4w"),
+	)
+
+	assert.NoError(t, err)
+
+	messages := []Message{
+		{
+			Role:    "user",
+			Content: "Quais os lanches mais baratos?",
+		},
+	}
+
+	response, err := assistant.CreateThreadAndRun(messages)
+	assert.NoError(t, err)
+
+	assert.NotEmpty(t, response)
+
+}

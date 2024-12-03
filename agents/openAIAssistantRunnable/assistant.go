@@ -180,12 +180,11 @@ func (a *Assistant) AddMessage(threadID, role, content string) (string, error) {
 	return messageResponse.ID, nil
 }
 
-func (a *Assistant) CreateRun(threadID, instructions string) (string, error) {
+func (a *Assistant) CreateRun(threadID string) (string, error) {
 	url := fmt.Sprintf("%s/threads/%s/runs", baseURL, threadID)
 
 	requestBody := CreateRunRequest{
-		AssistantID:  a.ID,
-		Instructions: instructions,
+		AssistantID: a.ID,
 	}
 
 	bodyJSON, err := json.Marshal(requestBody)
@@ -273,18 +272,18 @@ func (a *Assistant) CreateThreadAndRun(messages []Message) (string, error) {
 	defer resp.Body.Close()
 
 	respBody, _ := ioutil.ReadAll(resp.Body)
-	var messagesResponse GetThreadMessagesResponse
-	if err := json.Unmarshal(respBody, &messagesResponse); err != nil {
+	var runResponse GetTheradAndRunResponse
+	if err := json.Unmarshal(respBody, &runResponse); err != nil {
 		return "", err
 	}
 
-	for _, message := range messagesResponse.Data {
-		if message.Role == "assistant" {
-			return message.Content[0].Text.Value, nil
-		}
+	// Wait for the run to complete
+	response, err := a.RetrieveThreadMessages(runResponse.ID, runResponse.ThreadId)
+	if err != nil {
+		return "", err
 	}
 
-	return "", fmt.Errorf("no assistant message found")
+	return response, nil
 
 }
 
@@ -328,11 +327,7 @@ func (a *Assistant) checkRunStatus(threadID, runID string) (string, []ToolCall, 
 	return result.Status, toolCalls, nil
 }
 
-func (a *Assistant) RetrieveThreadMessages(threadID string, instructions string) (string, error) {
-	runID, err := a.CreateRun(threadID, instructions)
-	if err != nil {
-		return "", err
-	}
+func (a *Assistant) RetrieveThreadMessages(runID, threadID string) (string, error) {
 
 	for {
 		status, toolCalls, err := a.checkRunStatus(threadID, runID)

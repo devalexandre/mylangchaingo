@@ -92,3 +92,41 @@ type ToolCall struct {
 		Arguments string `json:"arguments"`
 	} `json:"function"`
 }
+
+type GetTheradAndRunResponse struct {
+	ID             string        `json:"id"`
+	Object         string        `json:"object"`
+	CreatedAt      int           `json:"created_at"`
+	AssistantId    string        `json:"assistant_id"`
+	ThreadId       string        `json:"thread_id"`
+	Status         string        `json:"status"`
+	StartedAt      interface{}   `json:"started_at"`
+	ExpiresAt      int           `json:"expires_at"`
+	CancelledAt    interface{}   `json:"cancelled_at"`
+	FailedAt       interface{}   `json:"failed_at"`
+	CompletedAt    interface{}   `json:"completed_at"`
+	RequiredAction interface{}   `json:"required_action"`
+	LastError      interface{}   `json:"last_error"`
+	Model          string        `json:"model"`
+	Instructions   string        `json:"instructions"`
+	Tools          []interface{} `json:"tools"`
+	ToolResources  struct {
+	} `json:"tool_resources"`
+	Metadata struct {
+	} `json:"metadata"`
+	Temperature         float64     `json:"temperature"`
+	TopP                float64     `json:"top_p"`
+	MaxCompletionTokens interface{} `json:"max_completion_tokens"`
+	MaxPromptTokens     interface{} `json:"max_prompt_tokens"`
+	TruncationStrategy  struct {
+		Type         string      `json:"type"`
+		LastMessages interface{} `json:"last_messages"`
+	} `json:"truncation_strategy"`
+	IncompleteDetails interface{} `json:"incomplete_details"`
+	Usage             interface{} `json:"usage"`
+	ResponseFormat    struct {
+		Type string `json:"type"`
+	} `json:"response_format"`
+	ToolChoice        string `json:"tool_choice"`
+	ParallelToolCalls bool   `json:"parallel_tool_calls"`
+}

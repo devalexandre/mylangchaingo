@@ -224,4 +224,3 @@ func TestAssistant_CreateThreadAndRun(t *testing.T) {
 	assert.NotEmpty(t, response)
 
 }
->>>>>>> 58e74fd (chore: update assistente create run)

@@ -54,7 +54,8 @@ func (ae *AgentExecutor) Run(input map[string]string) (string, error) {
 		return "", fmt.Errorf("failed to add message: %w", err)
 	}
 
-	response, err := ae.Agent.RetrieveThreadMessages(threadID, input["content"])
+	runId, err := ae.Agent.CreateRun(threadID)
+	response, err := ae.Agent.RetrieveThreadMessages(runId, threadID)
 	if err != nil {
 		return "", fmt.Errorf("failed to retrieve thread messages: %w", err)
 	}

@@ -124,7 +124,7 @@ func TestAssistant_HandleRequiresAction(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, messageID)
 
-	runID, err := assistant.CreateRun(threadID, "Please address the user as Jane Doe. The user has a premium account.")
+	runID, err := assistant.CreateRun(threadID)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, runID)
 }
@@ -145,7 +145,7 @@ func TestAssistant_RunFailure(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Simulando falha na execução
-	_, err = assistant.CreateRun(threadID, "Simulating failure")
+	_, err = assistant.CreateRun(threadID)
 	assert.Error(t, err)
 }
 
@@ -164,7 +164,7 @@ func TestAssistant_CheckRunStatus(t *testing.T) {
 	threadID, err := assistant.CreateThread()
 	assert.NoError(t, err)
 
-	runID, err := assistant.CreateRun(threadID, "")
+	runID, err := assistant.CreateRun(threadID)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, runID)
 

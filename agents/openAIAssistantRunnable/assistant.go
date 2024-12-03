@@ -241,6 +241,51 @@ func (a *Assistant) CreateRun(threadID, instructions string) (string, error) {
 	return runID, nil
 }
 
+func (a *Assistant) CreateThreadAndRun(instructions string) (string, error) {
+	url := fmt.Sprintf("%s/threads/runs", baseURL)
+
+	requestBody := CreateRunRequest{
+		AssistantID:  a.ID,
+		Instructions: instructions,
+	}
+
+	bodyJSON, err := json.Marshal(requestBody)
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyJSON))
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", a.APIKey))
+	req.Header.Set("OpenAI-Beta", "assistants=v2")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	respBody, _ := ioutil.ReadAll(resp.Body)
+	var messagesResponse GetThreadMessagesResponse
+	if err := json.Unmarshal(respBody, &messagesResponse); err != nil {
+		return "", err
+	}
+
+	for _, message := range messagesResponse.Data {
+		if message.Role == "assistant" {
+			return message.Content[0].Text.Value, nil
+		}
+	}
+
+	return "", fmt.Errorf("no assistant message found")
+
+}
+
 func (a *Assistant) checkRunStatus(threadID, runID string) (string, []ToolCall, error) {
 	url := fmt.Sprintf("%s/threads/%s/runs/%s", baseURL, threadID, runID)
 

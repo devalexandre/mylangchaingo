@@ -42,8 +42,8 @@ func NewAgentExecutor(agent *Assistant, tools []tools.Tool) *AgentExecutor {
 	return agentExecutor
 }
 
-// Invoke executes the agent with the provided input and returns the response
-func (ae *AgentExecutor) Invoke(input map[string]string) (string, error) {
+// Run executes the agent with the provided input and returns the response
+func (ae *AgentExecutor) Run(input map[string]string) (string, error) {
 	threadID, err := ae.Agent.CreateThread()
 	if err != nil {
 		return "", fmt.Errorf("failed to create thread: %w", err)
@@ -76,7 +76,10 @@ func (ae *AgentExecutor) HandleToolsExecution(threadID, runID string, toolCalls 
 		if t == nil {
 			return fmt.Errorf("tool %s not found", toolCall.Function.Name)
 		}
-
+		payload, err := extractArg1(toolCall.Function.Arguments)
+		if err != nil {
+			return fmt.Errorf("failed to extract payload: %w", err)
+		}
 		if ae.langsmithClient != nil {
 			err := ae.langsmithClient.Run(&langsmithgo.RunPayload{
 				Name:        fmt.Sprintf("%v-%v-%v", langsmithgo.Tool, t.Name(), "AgentExecutor"),
@@ -85,7 +88,7 @@ func (ae *AgentExecutor) HandleToolsExecution(threadID, runID string, toolCalls 
 				RunID:       mylangchaingo.GetRunId(),
 				ParentID:    mylangchaingo.GetParentId(),
 				Inputs: map[string]interface{}{
-					"payload": extractArg1(toolCall.Function.Arguments),
+					"payload": payload,
 				},
 				Extras: map[string]interface{}{
 					"Metadata": map[string]interface{}{
@@ -106,12 +109,15 @@ func (ae *AgentExecutor) HandleToolsExecution(threadID, runID string, toolCalls 
 		if err != nil {
 			return fmt.Errorf("failed to execute tool %s: %w", toolCall.Function.Name, err)
 		}
-
+		output, err := extractArg1(toolOutput)
+		if err != nil {
+			return fmt.Errorf("failed to extract output: %w", err)
+		}
 		if ae.langsmithClient != nil {
 			err := ae.langsmithClient.Run(&langsmithgo.RunPayload{
 				RunID: mylangchaingo.GetRunId(),
 				Outputs: map[string]interface{}{
-					"output": extractArg1(toolOutput),
+					"output": output,
 				},
 			})
 

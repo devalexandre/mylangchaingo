@@ -17,7 +17,7 @@ func main() {
 
 	opts := append([]maritaca.Option{
 		maritaca.WithToken(token),
-		maritaca.WithModel("sabia-2-medium"),
+		maritaca.WithModel("sabia-3"),
 	})
 
 	llm, err := maritaca.New(opts...)

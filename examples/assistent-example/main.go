@@ -7,6 +7,7 @@ import (
 )
 
 func main() {
+
 	tool := tools.Calculator{}
 	assistant, err := openAIAssistantRunnable.NewAssistant(
 		"Calculator Assistant",
@@ -22,7 +23,7 @@ func main() {
 	agentExecutor := openAIAssistantRunnable.NewAgentExecutor(assistant, []tools.Tool{tool})
 
 	input := map[string]string{"content": "What is 10 + 20?"}
-	response, err := agentExecutor.Invoke(input)
+	response, err := agentExecutor.Run(input)
 	if err != nil {
 		fmt.Println("Error invoking agent:", err)
 		return

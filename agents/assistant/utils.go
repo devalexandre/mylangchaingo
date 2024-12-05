@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/tmc/langchaingo/llms"
+	"github.com/tmc/langchaingo/tools"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -67,22 +68,21 @@ func SubmitToolOutput(threadID, runID, toolCallID, output string) error {
 }
 
 // toolFromTool converts an llms.Tool to a Tool.
-func ToolFromTool(t Tool) (Tool, error) {
-	tool := Tool{
-		Type: ToolType(t.Type),
+func ToolFromTool(t tools.Tool) llms.Tool {
+	return llms.Tool{
+		Type: "function",
+		Function: &llms.FunctionDefinition{
+			Name:        t.Name(),
+			Description: t.Description(),
+			Parameters: map[string]any{
+				"properties": map[string]any{
+					"__arg1": map[string]string{"title": "__arg1", "type": "string"},
+				},
+				"required": []string{"__arg1"},
+				"type":     "object",
+			},
+		},
 	}
-	switch t.Type {
-	case ToolTypeFunction:
-		tool.Function = FunctionDefinition{
-			Name:        t.Function.Name,
-			Description: t.Function.Description,
-			Parameters:  t.Function.Parameters,
-			Strict:      t.Function.Strict,
-		}
-	default:
-		return Tool{}, fmt.Errorf("tool type %v not supported", t.Type)
-	}
-	return tool, nil
 }
 
 // toolCallsFromToolCalls converts a slice of llms.ToolCall to a slice of ToolCall.

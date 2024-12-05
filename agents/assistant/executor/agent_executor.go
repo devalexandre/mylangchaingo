@@ -152,7 +152,7 @@ func (ae *AgentExecutor) CheckRunStatus(threadID, runID string) (string, []assis
 func (ae *AgentExecutor) HandleToolsExecution(threadID, runID string, toolCalls []assistant.ToolCall) error {
 	for _, toolCall := range toolCalls {
 		// Find the tool in the executor's tools
-		var t tools.Tool
+
 		for _, to := range ae.Tools {
 			if to.Name() == toolCall.Function.Name {
 
@@ -162,7 +162,7 @@ func (ae *AgentExecutor) HandleToolsExecution(threadID, runID string, toolCalls 
 				}
 				if ae.langsmithClient != nil {
 					err := ae.langsmithClient.Run(&langsmithgo.RunPayload{
-						Name:        fmt.Sprintf("%v-%v-%v", langsmithgo.Tool, t.Name(), "AgentExecutor"),
+						Name:        fmt.Sprintf("%v-%v-%v", langsmithgo.Tool, to.Name(), "AgentExecutor"),
 						SessionName: os.Getenv("LANGCHAIN_PROJECT_NAME"),
 						RunType:     langsmithgo.Tool,
 						RunID:       mylangchaingo.GetRunId(),
@@ -185,8 +185,8 @@ func (ae *AgentExecutor) HandleToolsExecution(threadID, runID string, toolCalls 
 					}
 				}
 				// Call the tool
-				toolOutput, err := t.Call(context.Background(), toolCall.Function.Arguments)
-				if err != nil {
+				toolOutput, errCall := to.Call(context.Background(), toolCall.Function.Arguments)
+				if errCall != nil {
 					return fmt.Errorf("failed to execute tool %s: %w", toolCall.Function.Name, err)
 				}
 				output, err := assistant.ExtractArg1(toolOutput)

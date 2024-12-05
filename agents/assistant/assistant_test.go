@@ -1,6 +1,7 @@
-package openAIAssistantRunnable
+package assistant
 
 import (
+	"github.com/devalexandre/mylangchaingo/agents/assistant/message"
 	"os"
 	"testing"
 
@@ -206,7 +207,7 @@ func TestAssistant_CreateThreadAndRun(t *testing.T) {
 		instructions,
 		"gpt-3.5-turbo-0125",
 		nil,
-		WithAssistantID("asst_qSusDWoOKM3lJFEabFqO7j4w"),
+		message.WithAssistantID("asst_qSusDWoOKM3lJFEabFqO7j4w"),
 	)
 
 	assert.NoError(t, err)

@@ -2,14 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/devalexandre/mylangchaingo/agents/openAIAssistantRunnable"
+	"github.com/devalexandre/mylangchaingo/agents/assistant"
 	"github.com/tmc/langchaingo/tools"
 )
 
 func main() {
 
 	tool := tools.Calculator{}
-	assistant, err := openAIAssistantRunnable.NewAssistant(
+	assistant, err := assistant.NewAssistant(
 		"Calculator Assistant",
 		"You are a personal math tutor.",
 		"gpt-3.5-turbo",
@@ -20,7 +20,7 @@ func main() {
 		return
 	}
 
-	agentExecutor := openAIAssistantRunnable.NewAgentExecutor(assistant, []tools.Tool{tool})
+	agentExecutor := assistant.NewAgentExecutor(assistant, []tools.Tool{tool})
 
 	input := map[string]string{"content": "What is 10 + 20?"}
 	response, err := agentExecutor.Run(input)

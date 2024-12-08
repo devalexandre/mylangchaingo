@@ -8,7 +8,7 @@ The **mylangchaingo** project is an open-source library designed to facilitate t
 - **NVIDIA LLM**: Allows integration with NVIDIA's large-scale language models, providing advanced capabilities for understanding and generating text.
 - **Maritaca AI**: Integration with Maritaca AI platform for access to customized natural language processing models.
 - **Whisper Integration**: Uses the Whisper speech recognition model to convert audio to text, making it easier to implement voice functionalities in your applications.
-
+- **Assistant openai**: Integration with OpenAI's assistant model, providing advanced conversational capabilities for your applications.
 ## Installation
 
 To install **mylangchaingo**, you can use the `go get` command:

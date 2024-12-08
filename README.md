@@ -10,7 +10,7 @@ The **mylangchaingo** project is an open-source library designed to facilitate t
 - **Whisper Integration**: Uses the Whisper speech recognition model to convert audio to text, making it easier to implement voice functionalities in your applications.
 - **Assistant openai**: Integration with OpenAI's assistant model, providing advanced conversational capabilities for your applications.
 - 
-![img.png](img.png)
+![img_1.png](img_1.png)
 
 ## Installation
 

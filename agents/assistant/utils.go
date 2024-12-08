@@ -9,6 +9,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"regexp"
+	"strings"
 )
 
 func Do(req *http.Request) ([]byte, error) {
@@ -123,4 +125,24 @@ func ExtractArg1(jsonStr string) (string, error) {
 	}
 
 	return val, nil
+}
+
+// FormatString formata uma string para atender aos requisitos:
+// - Remove caracteres inválidos
+// - Substitui espaços por "_"
+// - Garante que o comprimento máximo seja de 64 caracteres
+func FormatString(input string) string {
+	// Substituir espaços por "_"
+	formatted := strings.ReplaceAll(input, " ", "_")
+
+	// Regex para manter apenas caracteres válidos: a-z, A-Z, 0-9, _, -
+	var validChars = regexp.MustCompile(`[^a-zA-Z0-9_-]+`)
+	formatted = validChars.ReplaceAllString(formatted, "")
+
+	// Garantir que o comprimento não exceda 64 caracteres
+	if len(formatted) > 64 {
+		formatted = formatted[:64]
+	}
+
+	return formatted
 }

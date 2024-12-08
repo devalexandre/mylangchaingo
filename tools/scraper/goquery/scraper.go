@@ -6,10 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/devalexandre/langsmithgo"
-	"github.com/devalexandre/mylangchaingo"
-	"github.com/google/uuid"
-	"golang.org/x/net/html"
 	"log"
 	"net/url"
 	"os"
@@ -17,8 +13,14 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/PuerkitoBio/goquery"
+	"github.com/devalexandre/langsmithgo"
+	"github.com/devalexandre/mylangchaingo"
+	"github.com/google/uuid"
+	"github.com/tmc/langchaingo/callbacks"
 	"github.com/tmc/langchaingo/tools"
+	"golang.org/x/net/html"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 const (
@@ -31,12 +33,13 @@ const (
 var ErrScrapingFailed = errors.New("scraper could not read URL, or scraping is not allowed for provided URL")
 
 type Scraper struct {
-	MaxDepth        int
-	Parallels       int
-	Delay           int64
-	Blacklist       []string
-	Async           bool
-	langsmithClient *langsmithgo.Client
+	MaxDepth         int
+	Parallels        int
+	Delay            int64
+	Blacklist        []string
+	Async            bool
+	langsmithClient  *langsmithgo.Client
+	CallbacksHandler callbacks.Handler
 }
 
 var _ tools.Tool = Scraper{}
@@ -79,6 +82,11 @@ func (s Scraper) Description() string {
 }
 
 func (s Scraper) Call(ctx context.Context, input string) (string, error) {
+
+	if s.CallbacksHandler != nil {
+		s.CallbacksHandler.HandleToolStart(ctx, input)
+	}
+
 	urlLink, err := ExtractURL(input)
 	if err != nil {
 		return "", fmt.Errorf("failed to extract URL: %w", err)
@@ -204,6 +212,10 @@ func (s Scraper) Call(ctx context.Context, input string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("error running langsmith: %w", err)
 		}
+	}
+
+	if s.CallbacksHandler != nil {
+		s.CallbacksHandler.HandleToolEnd(ctx, response)
 	}
 
 	return response, nil

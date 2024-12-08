@@ -2,24 +2,26 @@ package main
 
 import (
 	"context"
+	"log"
+	"os"
+
 	"github.com/devalexandre/mylangchaingo/llms/maritaca"
 	"github.com/devalexandre/mylangchaingo/tools/scraper/goquery"
 	"github.com/tmc/langchaingo/agents"
 	"github.com/tmc/langchaingo/chains"
 	"github.com/tmc/langchaingo/tools"
-	"log"
-	"os"
 )
 
 func main() {
 
 	SetUp() // Set up the environment variables
 	ctx := context.Background()
+
 	token := os.Getenv("MARITACA_KEY")
 
 	opts := append([]maritaca.Option{
 		maritaca.WithToken(token),
-		maritaca.WithModel("sabia-2-medium"),
+		maritaca.WithModel("sabia-3"),
 	})
 
 	llm, err := maritaca.New(opts...)
@@ -36,12 +38,8 @@ func main() {
 		scrapr,
 	}
 
-	executor, err := agents.Initialize(
-		llm,
-		agentTools,
-		agents.ZeroShotReactDescription,
-		agents.WithMaxIterations(5),
-	)
+	agent := agents.NewOpenAIFunctionsAgent(llm, agentTools, agents.WithMaxIterations(5))
+	executor := agents.NewExecutor(agent)
 	if err != nil {
 		log.Fatal(err)
 	}

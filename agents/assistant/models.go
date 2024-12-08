@@ -50,21 +50,9 @@ type FileSearchToolResource struct {
 	VectorStores   []VectorStore `json:"vector_stores,omitempty"`
 }
 
-type FunctionTool struct {
-	Type                    string `json:"type"` //The type of tool being defined: function
-	llms.FunctionDefinition `json:"function"`
-}
-
 type ToolResource struct {
-	CodeInterpreter CodeInterpreterToolResource `json:"code_interpreter,omitempty"`
-	FileSearch      FileSearchToolResource      `json:"file_search,omitempty"`
-	Function        FunctionTool                `json:"function,omitempty"`
-}
-type FunctionDefinition struct {
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	Parameters  any    `json:"parameters"`
-	Strict      bool   `json:"strict,omitempty"`
+	CodeInterpreter *CodeInterpreterToolResource `json:"code_interpreter,omitempty"`
+	FileSearch      *FileSearchToolResource      `json:"file_search,omitempty"`
 }
 
 type ToolFunction struct {
@@ -79,9 +67,9 @@ type ToolCall struct {
 }
 
 type Tool struct {
-	ID       string             `json:"id,omitempty"`
-	Type     ToolType           `json:"type"`
-	Function FunctionDefinition `json:"function,omitempty"`
+	ID       string    `json:"id,omitempty"`
+	Type     ToolType  `json:"type"`
+	Function llms.Tool `json:"function,omitempty"`
 }
 type ContentTextValue struct {
 	Value       string       `json:"value"`
@@ -131,7 +119,7 @@ type Assistant struct {
 	Name         string            `json:"name,omitempty"`
 	Description  string            `json:"description,omitempty"`
 	Instructions string            `json:"instructions,omitempty"`
-	Tools        []llms.Tool       `json:"tools,omitempty"`
+	Tools        *[]llms.Tool      `json:"tools,omitempty"`
 	ToolResource *ToolResource     `json:"tool_resources,omitempty"`
 	Temperature  *float64          `json:"temperature,omitempty"`
 	TopP         *float64          `json:"top_p,omitempty"`

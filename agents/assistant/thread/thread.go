@@ -15,26 +15,33 @@ type Thread struct {
 	CreatedAt    int                    `json:"created_at,omitempty"`
 	Messages     []message.Message      `json:"messages,omitempty"`
 	Metadata     map[string]string      `json:"metadata,omitempty"`
-	ToolResource assistant.ToolResource `json:"tool_resource,omitempty"`
+	ToolResource assistant.ToolResource `json:"tool_resources,omitempty"`
 }
 
 // NewThereadinicializa um novo assistente, opcionalmente com um ID de assistente existente.
-func CreateTheread() (*Thread, error) {
-
+func CreateThread() (*Thread, error) {
 	url := fmt.Sprintf("%s/threads", assistant.BaseURL)
 
+	// Crie a requisição POST
 	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
+	req.Header.Set("Content-Type", "application/json")
 
+	// Execute a requisição
 	respBody, err := assistant.Do(req)
-	var ThreadResponse Thread
-	if err := json.Unmarshal(respBody, &ThreadResponse); err != nil {
-		return nil, err
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
 
-	return &ThreadResponse, nil
+	// Parse a resposta
+	var threadResponse Thread
+	if err := json.Unmarshal(respBody, &threadResponse); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &threadResponse, nil
 }
 
 // Retrieve assistan

@@ -1,8 +1,6 @@
 package executor
 
-import (
-	"github.com/tmc/langchaingo/tools"
-)
+import "github.com/tmc/langchaingo/tools"
 
 type ExecutorOption func(*AgentExecutor)
 

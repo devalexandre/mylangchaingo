@@ -10,6 +10,7 @@ import (
 // NewAssistant inicializa um novo assistente, opcionalmente com um ID de assistente existente.
 func NewAssistant(opts ...AssistantOption) (*Assistant, error) {
 	assistant := &Assistant{}
+
 	// Aplica quaisquer opções
 	for _, opt := range opts {
 		opt(assistant)

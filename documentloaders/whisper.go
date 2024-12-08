@@ -5,18 +5,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/devalexandre/langsmithgo"
-	"github.com/devalexandre/mylangchaingo"
-	"github.com/google/uuid"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
+
+	"github.com/devalexandre/langsmithgo"
+	"github.com/devalexandre/mylangchaingo"
+	"github.com/google/uuid"
 
 	lgdl "github.com/tmc/langchaingo/documentloaders"
 	"github.com/tmc/langchaingo/schema"
@@ -60,7 +60,12 @@ func NewWhisperOpenAI(apiKey string, opts ...WhisperOpenAIOption) *WhisperOpenAI
 	}
 
 	if os.Getenv("LANGCHAIN_TRACING") != "" && os.Getenv("LANGCHAIN_TRACING") != "false" {
-		client := langsmithgo.NewClient(os.Getenv("LANGSMITH_API_KEY"))
+		client, err := langsmithgo.NewClient()
+		if err != nil {
+			fmt.Printf("Error creating langsmith client: %v", err)
+			return nil
+		}
+
 		loader.langsmithClient = client
 
 		if mylangchaingo.GetRunId() == "" {
@@ -130,11 +135,6 @@ func (c *WhisperOpenAILoader) Load(ctx context.Context) ([]schema.Document, erro
 				"temperature": c.temperature,
 				"language":    c.language,
 			},
-			Metadata: map[string]interface{}{
-				"go_version": runtime.Version(),
-				"platform":   runtime.GOOS,
-				"arch":       runtime.GOARCH,
-			},
 		})
 
 		if err != nil {
@@ -194,11 +194,6 @@ func (c *WhisperOpenAILoader) Load(ctx context.Context) ([]schema.Document, erro
 			ParentID:    mylangchaingo.GetParentId(),
 			Inputs: map[string]interface{}{
 				"prompt": file.Name(),
-			},
-			Metadata: map[string]interface{}{
-				"go_version": runtime.Version(),
-				"platform":   runtime.GOOS,
-				"arch":       runtime.GOARCH,
 			},
 		})
 

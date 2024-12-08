@@ -45,25 +45,25 @@ func WithModel(model string) AssistantOption {
 
 // WithTools configura as ferramentas do assistente.
 func WithTools(tools []tools.Tool) AssistantOption {
-	toolsPayload := make([]llms.Tool, len(tools))
+	assistantTools := make([]llms.Tool, len(tools))
 	for i, tool := range tools {
-		toolsPayload[i] = llms.Tool{
-			Type: "function",
-			Function: &llms.FunctionDefinition{
-				Name:        tool.Name(),
-				Description: tool.Description(),
-				Parameters: map[string]any{
-					"properties": map[string]any{
-						"__arg1": map[string]string{"title": "__arg1", "type": "string"},
-					},
-					"required": []string{"__arg1"},
-					"type":     "object",
+		toolsPayload := llms.FunctionDefinition{
+			Name:        FormatString(tool.Name()),
+			Description: tool.Description(),
+			Parameters: map[string]any{
+				"properties": map[string]any{
+					"__arg1": map[string]string{"title": "__arg1", "type": "string"},
 				},
+				"required": []string{"__arg1"},
+				"type":     "object",
 			},
 		}
+		assistantTools[i].Type = "function"
+		assistantTools[i].Function = &toolsPayload
 	}
+
 	return func(a *Assistant) {
-		a.Tools = toolsPayload
+		a.Tools = &assistantTools
 	}
 
 }
